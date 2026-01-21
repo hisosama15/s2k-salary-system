@@ -30,7 +30,7 @@
         .table-salary {
             width: 100%;
             border-collapse: collapse;
-            font-size: 13px; /* ปรับลดนิดนึงเพราะรายการเยอะขึ้น */
+            font-size: 13px;
         }
         
         .table-salary th, .table-salary td {
@@ -47,7 +47,7 @@
         }
 
         .table-salary td {
-            padding: 2px 8px; /* ลด padding ลงนิดหน่อย */
+            padding: 4px 8px;
             vertical-align: top;
         }
 
@@ -55,6 +55,7 @@
             border-bottom: 1px solid #000;
         }
 
+        /* สี */
         .bg-orange { background-color: #ffd198ff !important; }
         .bg-blue { background-color: #abceffff !important; }
         .bg-yellow { background-color: #fff711ff !important; }
@@ -81,19 +82,12 @@
         .emp-info { width: 100%; margin-bottom: 15px; font-size: 14px; }
         .emp-info td { padding: 4px 0; }
 
-        /* ตารางสถิติ (เพิ่มใหม่) */
-        .table-stats {
-            width: 100%;
-            font-size: 12px;
-            margin-top: 10px;
-            border-collapse: collapse;
-            text-align: center;
+        /* สไตล์สำหรับสถิติ (ตัวเล็ก + สีน้ำเงิน) */
+        .stat-text {
+            color: #0d6efd !important; /* สีน้ำเงิน */
+            font-size: 12px !important; /* เล็กลงนิดนึง */
+            font-weight: normal;
         }
-        .table-stats th, .table-stats td {
-            border: 1px solid #999;
-            padding: 3px;
-        }
-        .table-stats th { background-color: #f8f9fa; }
 
         @media print {
             body { 
@@ -108,6 +102,56 @@
     </style>
 </head>
 <body>
+
+    {{-- PHP Logic: จัดเรียงข้อมูล (ซ่อน 0 และดันขึ้น) --}}
+    @php
+        // 1. สร้างลิสต์รายได้ (Income)
+        $incomes = [];
+        $incomes[] = ['name' => "วันทำงานปกติ ({$slip->work_days} วัน)", 'amount' => number_format($slip->salary, 2)];
+        
+        if($slip->wage_rate > 0) $incomes[] = ['name' => "อัตราเงินเดือน/ค่าแรง", 'amount' => number_format($slip->wage_rate, 2)];
+        if($slip->ot_1_5 > 0)    $incomes[] = ['name' => "OT x 1.5 ({$slip->ot_1_5_hrs} ชม.)", 'amount' => number_format($slip->ot_1_5, 2)];
+        if($slip->ot_1_0 > 0)    $incomes[] = ['name' => "OT x 1.0 ({$slip->ot_1_0_hrs} ชม.)", 'amount' => number_format($slip->ot_1_0, 2)];
+        if($slip->ot_2_0 > 0)    $incomes[] = ['name' => "OT x 2.0 ({$slip->ot_2_0_hrs} ชม.)", 'amount' => number_format($slip->ot_2_0, 2)];
+        if($slip->ot_3_0 > 0)    $incomes[] = ['name' => "OT x 3.0 ({$slip->ot_3_0_hrs} ชม.)", 'amount' => number_format($slip->ot_3_0, 2)];
+        
+        if($slip->shift_allowance > 0)   $incomes[] = ['name' => "ค่ากะ", 'amount' => number_format($slip->shift_allowance, 2)];
+        if($slip->diligence > 0)         $incomes[] = ['name' => "เบี้ยขยัน", 'amount' => number_format($slip->diligence, 2)];
+        if($slip->living_allowance > 0)  $incomes[] = ['name' => "ค่าครองชีพ", 'amount' => number_format($slip->living_allowance, 2)];
+        if($slip->medical_allowance > 0) $incomes[] = ['name' => "ค่ารักษาพยาบาล", 'amount' => number_format($slip->medical_allowance, 2)];
+        if($slip->trip_allowance > 0)    $incomes[] = ['name' => "ค่าเที่ยว", 'amount' => number_format($slip->trip_allowance, 2)];
+        if($slip->per_diem > 0)          $incomes[] = ['name' => "เบี้ยเลี้ยง", 'amount' => number_format($slip->per_diem, 2)];
+        if($slip->commission > 0)        $incomes[] = ['name' => "ค่าคอมมิชชั่น", 'amount' => number_format($slip->commission, 2)];
+        if($slip->bonus > 0)             $incomes[] = ['name' => "โบนัส", 'amount' => number_format($slip->bonus, 2)];
+        if($slip->other_income > 0)      $incomes[] = ['name' => "รายได้อื่นๆ", 'amount' => number_format($slip->other_income, 2)];
+
+        // 2. สร้างลิสต์รายการหัก (Deduction)
+        $deductions = [];
+        if($slip->sso > 0)                    $deductions[] = ['name' => "ประกันสังคม", 'amount' => number_format($slip->sso, 2)];
+        if($slip->tax > 0)                    $deductions[] = ['name' => "ภาษีเงินได้", 'amount' => number_format($slip->tax, 2)];
+        if($slip->student_loan_deduction > 0) $deductions[] = ['name' => "กยศ.", 'amount' => number_format($slip->student_loan_deduction, 2)];
+        if($slip->excess_leave_deduction > 0) $deductions[] = ['name' => "หักลาเกินสิทธิ์", 'amount' => number_format($slip->excess_leave_deduction, 2)];
+        if($slip->late_deduction > 0)         $deductions[] = ['name' => "หักมาสาย", 'amount' => number_format($slip->late_deduction, 2)];
+        if($slip->absent_deduct > 0)          $deductions[] = ['name' => "หักขาดงาน", 'amount' => number_format($slip->absent_deduct, 2)];
+        if($slip->other_deduct > 0)           $deductions[] = ['name' => "หักอื่นๆ", 'amount' => number_format($slip->other_deduct, 2)];
+
+        // 3. เอาสถิติ (Stats) มาต่อท้ายรายการหัก
+        if($slip->sick_leave > 0)         $deductions[] = ['name' => "ป่วย ({$slip->sick_leave} วัน)", 'amount' => '-', 'is_stat' => true];
+        if($slip->sick_leave_no_cert > 0) $deductions[] = ['name' => "ป่วยไม่มีใบ ({$slip->sick_leave_no_cert} วัน)", 'amount' => '-', 'is_stat' => true];
+        if($slip->personal_leave > 0)     $deductions[] = ['name' => "ลากิจ ({$slip->personal_leave} ชม.)", 'amount' => '-', 'is_stat' => true];
+        if($slip->annual_leave > 0)       $deductions[] = ['name' => "พักร้อน ({$slip->annual_leave} ชม.)", 'amount' => '-', 'is_stat' => true];
+        if($slip->absent > 0)             $deductions[] = ['name' => "ขาดงาน ({$slip->absent} ชม.)", 'amount' => '-', 'is_stat' => true];
+        if($slip->other_leave > 0)        $deductions[] = ['name' => "ลาอื่นๆ ({$slip->other_leave} ชม.)", 'amount' => '-', 'is_stat' => true];
+        if($slip->late > 0)               $deductions[] = ['name' => "สาย ({$slip->late} นาที)", 'amount' => '-', 'is_stat' => true];
+        
+        // หมายเหตุ
+        if(!empty($slip->remark)) {
+            $deductions[] = ['name' => "หมายเหตุ: {$slip->remark}", 'amount' => '', 'is_stat' => true];
+        }
+
+        $maxRows = max(count($incomes), count($deductions));
+        if ($maxRows < 10) $maxRows = 10;
+    @endphp
 
     <div class="container mb-3 no-print text-center">
         <a href="/dashboard" class="btn btn-secondary me-2">⬅ กลับ</a>
@@ -151,7 +195,7 @@
                 <td>
                     {{ $slip->department ?? '-' }} 
                     &nbsp;|&nbsp; 
-                    <strong>จ่ายแบบ:</strong> {{ $slip->payment_type ?? 'โอนจ่าย' }}
+                    <strong>จ่ายแบบ:</strong> {{ $slip->payment_type ?? '-' }}
                 </td>
             </tr>
         </table>
@@ -168,67 +212,19 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr>
-                            <td>วันทำงานปกติ ({{ $slip->work_days }} วัน)</td>
-                            <td class="amount">{{ number_format($slip->salary, 2) }}</td>
-                            <td>ประกันสังคม</td>
-                            <td class="amount">{{ number_format($slip->sso, 2) }}</td>
-                        </tr>
-                        <tr>
-                            <td>อัตราเงินเดือน/ค่าแรง</td>
-                            <td class="amount">{{ number_format($slip->wage_rate, 2) }}</td>
-                            <td>ภาษีเงินได้</td>
-                            <td class="amount">{{ number_format($slip->tax, 2) }}</td>
-                        </tr>
-                        
-                        @if($slip->ot_1_0 > 0)
-                        <tr>
-                            <td>OT x 1.0 ({{ $slip->ot_1_0_hrs }} ชม.)</td>
-                            <td class="amount">{{ number_format($slip->ot_1_0, 2) }}</td>
-                            <td>กยศ.</td>
-                            <td class="amount">{{ number_format($slip->student_loan_deduction, 2) }}</td>
-                        </tr>
-                        @endif
+                        @for ($i = 0; $i < $maxRows; $i++)
+                            <tr>
+                                <td>{{ isset($incomes[$i]) ? $incomes[$i]['name'] : '' }}</td>
+                                <td class="amount">{{ isset($incomes[$i]) ? $incomes[$i]['amount'] : '' }}</td>
+                                <td class="{{ isset($deductions[$i]['is_stat']) ? 'stat-text' : '' }}">
+                                    {{ isset($deductions[$i]) ? $deductions[$i]['name'] : '' }}
+                                </td>
+                                <td class="amount {{ isset($deductions[$i]['is_stat']) ? 'stat-text' : '' }}">
+                                    {{ isset($deductions[$i]) ? $deductions[$i]['amount'] : '' }}
+                                </td>
+                            </tr>
+                        @endfor
 
-                        @if($slip->ot_1_5 > 0)
-                        <tr>
-                            <td>OT x 1.5 ({{ $slip->ot_1_5_hrs }} ชม.)</td>
-                            <td class="amount">{{ number_format($slip->ot_1_5, 2) }}</td>
-                            <td>หักลาเกินสิทธิ์</td>
-                            <td class="amount">{{ number_format($slip->excess_leave_deduction, 2) }}</td>
-                        </tr>
-                        @endif
-
-                        @if($slip->ot_2_0 > 0)
-                        <tr>
-                            <td>OT x 2.0 ({{ $slip->ot_2_0_hrs }} ชม.)</td>
-                            <td class="amount">{{ number_format($slip->ot_2_0, 2) }}</td>
-                            <td>หักมาสาย</td>
-                            <td class="amount">{{ number_format($slip->late_deduction, 2) }}</td>
-                        </tr>
-                        @endif
-
-                        @if($slip->ot_3_0 > 0)
-                        <tr>
-                            <td>OT x 3.0 ({{ $slip->ot_3_0_hrs }} ชม.)</td>
-                            <td class="amount">{{ number_format($slip->ot_3_0, 2) }}</td>
-                            <td>หักขาดงาน</td>
-                            <td class="amount">{{ number_format($slip->absent_deduct, 2) }}</td>
-                        </tr>
-                        @endif
-
-                        @if($slip->shift_allowance > 0) <tr><td>ค่ากะ</td><td class="amount">{{ number_format($slip->shift_allowance, 2) }}</td><td>หักอื่นๆ</td><td class="amount">{{ number_format($slip->other_deduct, 2) }}</td></tr> @endif
-                        @if($slip->diligence > 0) <tr><td>เบี้ยขยัน</td><td class="amount">{{ number_format($slip->diligence, 2) }}</td><td></td><td></td></tr> @endif
-                        @if($slip->living_allowance > 0) <tr><td>ค่าครองชีพ</td><td class="amount">{{ number_format($slip->living_allowance, 2) }}</td><td></td><td></td></tr> @endif
-                        @if($slip->medical_allowance > 0) <tr><td>ค่ารักษาพยาบาล</td><td class="amount">{{ number_format($slip->medical_allowance, 2) }}</td><td></td><td></td></tr> @endif
-                        @if($slip->trip_allowance > 0) <tr><td>ค่าเที่ยว</td><td class="amount">{{ number_format($slip->trip_allowance, 2) }}</td><td></td><td></td></tr> @endif
-                        @if($slip->per_diem > 0) <tr><td>เบี้ยเลี้ยง</td><td class="amount">{{ number_format($slip->per_diem, 2) }}</td><td></td><td></td></tr> @endif
-                        @if($slip->commission > 0) <tr><td>ค่าคอมมิชชั่น</td><td class="amount">{{ number_format($slip->commission, 2) }}</td><td></td><td></td></tr> @endif
-                        @if($slip->bonus > 0) <tr><td>โบนัส</td><td class="amount">{{ number_format($slip->bonus, 2) }}</td><td></td><td></td></tr> @endif
-                        @if($slip->other_income > 0) <tr><td>รายได้อื่นๆ</td><td class="amount">{{ number_format($slip->other_income, 2) }}</td><td></td><td></td></tr> @endif
-                        
-                        <tr><td>&nbsp;</td><td></td><td></td><td></td></tr>
-                        
                         <tr style="font-weight:bold; border-top:1px solid #000;">
                             <td class="text-end bg-orange">รวมรายได้</td>
                             <td class="amount bg-orange">{{ number_format($slip->total_income, 2) }}</td>
@@ -237,40 +233,6 @@
                         </tr>
                     </tbody>
                 </table>
-
-                <div class="mt-2">
-                    <strong style="font-size:12px;">สถิติการมาทำงาน (Attendance Stats):</strong>
-                    <table class="table-stats">
-                        <thead>
-                            <tr>
-                                <th>ป่วย (วัน)</th>
-                                <th>ป่วยไม่มีใบ (วัน)</th>
-                                <th>ลากิจ (ชม.)</th>
-                                <th>พักร้อน (ชม.)</th>
-                                <th>ขาดงาน (ชม.)</th>
-                                <th>ลาอื่นๆ (ชม.)</th>
-                                <th>สาย (นาที)</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td>{{ $slip->sick_leave + 0 }}</td>
-                                <td>{{ $slip->sick_leave_no_cert + 0 }}</td>
-                                <td>{{ $slip->personal_leave + 0 }}</td>
-                                <td>{{ $slip->annual_leave + 0 }}</td>
-                                <td>{{ $slip->absent + 0 }}</td>
-                                <td>{{ $slip->other_leave + 0 }}</td>
-                                <td style="color:red;">{{ $slip->late + 0 }}</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-                
-                @if($slip->remark)
-                <div class="mt-2" style="font-size: 12px; color: #555;">
-                    <strong>หมายเหตุ:</strong> {{ $slip->remark }}
-                </div>
-                @endif
             </div>
 
             <div class="col-3 ps-0"> 
@@ -289,11 +251,6 @@
                     </div>
                 </div>
 
-                <div class="border border-2 border-dark p-3 text-center bg-yellow mb-2">
-                    <h6 class="mb-1 fw-bold">เงินได้สุทธิ</h6>
-                    <h2 class="fw-bold text-primary mb-0">{{ number_format($slip->net_salary, 2) }}</h2>
-                </div>
-
                 <div class="box-info">
                     <div class="box-header bg-green">ผู้จัดทำ</div>
                     <div class="box-content">
@@ -301,27 +258,11 @@
                     </div>
                 </div>
 
-            </div>
-        </div>
+                <div class="border border-2 border-dark p-3 text-center bg-yellow mb-2">
+                    <h6 class="mb-1 fw-bold">เงินได้สุทธิ</h6>
+                    <h2 class="fw-bold text-primary mb-0">{{ number_format($slip->net_salary, 2) }}</h2>
+                </div>
 
-        <div class="row mt-3">
-            <div class="col-12">
-                <table class="table table-bordered table-sm text-center" style="font-size:12px; border-color:#999;">
-                    <thead class="bg-light">
-                        <tr>
-                            <th>เงินได้สะสม (YTD Income)</th>
-                            <th>ภาษีสะสม (YTD Tax)</th>
-                            <th>ประกันสังคมสะสม (YTD SSO)</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>{{ number_format($slip->ytd_income ?? 0, 2) }}</td>
-                            <td>{{ number_format($slip->ytd_tax ?? 0, 2) }}</td>
-                            <td>{{ number_format($slip->ytd_sso ?? 0, 2) }}</td>
-                        </tr>
-                    </tbody>
-                </table>
             </div>
         </div>
 

@@ -60,6 +60,7 @@ class SalaryImport implements ToModel, WithStartRow
             'pay_date'   => request('pay_date'),
             'start_date' => request('start_date'),
             'end_date'   => request('end_date'),
+            'payment_type' => request('payment_type'), // ✅ เพิ่มบรรทัดนี้แล้วครับ!
 
             // ---------------------------------
             // หมวดรายได้ (Income)
