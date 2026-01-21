@@ -50,5 +50,6 @@ class SalarySlip extends Model
         'annual_leave', 'absent', 'late', 'other_leave', // [ใหม่]
         
         'remark', // [ใหม่]
+        'prepared_by', // ✅✅ ต้องมีบรรทัดนี้ครับ! ถ้าไม่มี ข้อมูลจะไม่เข้า
     ];
 }

@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\SalaryController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\ProfileController;
 
 // 1. หน้า Login (เข้าได้ทุกคน)
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
@@ -28,6 +29,10 @@ Route::middleware(['auth'])->group(function () {
     // หน้า Dashboard พนักงาน (เดี๋ยวสร้าง EP.หน้า)
     Route::get('/dashboard', [DashboardController::class, 'index']); // หน้าตารางรวม
     Route::get('/slip/{id}', [DashboardController::class, 'show']);  // หน้าดูรายละเอียด
+
+    // Route สำหรับหน้า Profile
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
 
     // หน้าแรก: ถ้าเข้าเว็บมาเฉยๆ ให้เด้งไปหน้า Login
     Route::get('/', function () {

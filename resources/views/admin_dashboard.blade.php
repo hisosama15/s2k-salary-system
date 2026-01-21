@@ -9,13 +9,28 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
 </head>
 <body class="bg-light">
-    <nav class="navbar navbar-dark  mb-4" style="background-color: #ff8e16ff;" >
+    
+    {{-- ✅ ส่วนหัว Navbar (แก้ใหม่ให้มีปุ่ม Profile) --}}
+    <nav class="navbar navbar-dark mb-4" style="background-color: #ff8e16ff;" >
         <div class="container">
-            <img src="{{ asset('images/LOGO_S2K.png') }}" width="80" height="auto" alt="Company Logo">
-            <span class="navbar-brand fw-bold">Admin Control Panel</span>
-            <div class="d-flex align-items-center gap-3">
-                <span class="text-white">สวัสดี, ผู้จัดการ</span>
-                <a href="/logout" class="btn btn-sm btn-danger">ออกจากระบบ</a>
+            <div class="d-flex align-items-center gap-2">
+                <img src="{{ asset('images/LOGO_S2K.png') }}" width="80" height="auto" alt="Company Logo">
+                <span class="navbar-brand fw-bold mb-0 h1 d-none d-md-block">Admin Control Panel</span>
+            </div>
+            
+            <div class="d-flex align-items-center gap-2">
+                {{-- 1. ดึงชื่อจริงมาโชว์ (เช่น สวัสดี, นายธนบดี) --}}
+                <span class="text-white d-none d-md-block me-2">สวัสดี, {{ Auth::user()->name }}</span>
+                
+                {{-- 2. ปุ่มแก้ไขข้อมูลส่วนตัว (กดตรงนี้เพื่อไปเปลี่ยนชื่อ) --}}
+                <a href="{{ route('profile.edit') }}" class="btn btn-sm btn-light text-dark fw-bold shadow-sm" title="แก้ไขข้อมูลส่วนตัว">
+                    <i class="bi bi-person-fill-gear"></i> <span class="d-none d-sm-inline">ข้อมูลส่วนตัว</span>
+                </a>
+
+                {{-- 3. ปุ่มออก --}}
+                <a href="/logout" class="btn btn-sm btn-danger shadow-sm">
+                    <i class="bi bi-box-arrow-right"></i> ออก
+                </a>
             </div>
         </div>
     </nav>
@@ -59,17 +74,11 @@
                     </div>
                 </div>
              </div>
-        
-        
         </div>
     </div>
 
-   
-
     <script>
         let idleTime = 0;
-        
-        // ตั้งเวลาตัดระบบ (หน่วย: นาที) *ต้องตั้งให้เท่ากับหรือน้อยกว่าใน .env นิดหน่อย
         const timeoutMinutes = 15; 
         const timeoutMilliseconds = timeoutMinutes * 60 * 1000;
 
@@ -77,20 +86,18 @@
             idleTime = 0;
         }
 
-        // ถ้ามีการขยับเมาส์ หรือ กดแป้นพิมพ์ ให้เริ่มนับศูนย์ใหม่
         document.onload = resetTimer;
         document.onmousemove = resetTimer;
-        document.onmousedown = resetTimer; // กดคลิก
-        document.ontouchstart = resetTimer; // ทัชสกรีน
-        document.onclick = resetTimer;     // คลิก
-        document.onkeypress = resetTimer;   // พิมพ์
+        document.onmousedown = resetTimer;
+        document.ontouchstart = resetTimer;
+        document.onclick = resetTimer;
+        document.onkeypress = resetTimer;
 
-        // ตรวจสอบทุกๆ 1 นาที
         setInterval(function() {
-            idleTime += 60000; // บวกไปทีละ 1 นาที
+            idleTime += 60000;
             if (idleTime >= timeoutMilliseconds) {
                 alert('⏳ หมดเวลาการเชื่อมต่อ! ระบบจะออกจากระบบอัตโนมัติเพื่อความปลอดภัย');
-                window.location.href = '/logout'; // ดีดไปหน้า Logout
+                window.location.href = '/logout';
             }
         }, 60000); 
     </script>

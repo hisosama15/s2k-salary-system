@@ -254,7 +254,7 @@
                 <div class="box-info">
                     <div class="box-header bg-green">ผู้จัดทำ</div>
                     <div class="box-content">
-                        ADMIN
+                        {{ $slip->prepared_by ?? 'ADMIN' }}
                     </div>
                 </div>
 
