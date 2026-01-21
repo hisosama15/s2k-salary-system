@@ -103,9 +103,9 @@
 </head>
 <body>
 
-    {{-- PHP Logic: จัดเรียงข้อมูล (ซ่อน 0 และดันขึ้น) --}}
+    {{-- PHP Logic: จัดเรียงข้อมูล (ซ่อน 0, ดันขึ้น, และหดสั้น) --}}
     @php
-        // 1. สร้างลิสต์รายได้ (Income)
+        // 1. สร้างลิสต์รายได้ (Income) - อันไหนเป็น 0 จะไม่ถูกใส่ใน Array นี้
         $incomes = [];
         $incomes[] = ['name' => "วันทำงานปกติ ({$slip->work_days} วัน)", 'amount' => number_format($slip->salary, 2)];
         
@@ -149,8 +149,10 @@
             $deductions[] = ['name' => "หมายเหตุ: {$slip->remark}", 'amount' => '', 'is_stat' => true];
         }
 
+        // ✅ คำนวณจำนวนบรรทัดสูงสุดตามจริง (ไม่มีการล็อคขั้นต่ำ 10 แล้ว)
         $maxRows = max(count($incomes), count($deductions));
-        if ($maxRows < 10) $maxRows = 10;
+        // เผื่อไว้นิดนึง ถ้าไม่มีข้อมูลเลย ให้โชว์อย่างน้อย 1 บรรทัด (กันตารางพัง)
+        if ($maxRows < 1) $maxRows = 1; 
     @endphp
 
     <div class="container mb-3 no-print text-center">
@@ -191,11 +193,11 @@
                     {{ \Carbon\Carbon::parse($slip->start_date)->addYears(543)->format('d/m/Y') }} - 
                     {{ \Carbon\Carbon::parse($slip->end_date)->addYears(543)->format('d/m/Y') }}
                 </td>
-                <td><strong>แผนก:</strong></td>
+                <td><strong>แผนก/ฝ่าย:</strong></td>
                 <td>
                     {{ $slip->department ?? '-' }} 
                     &nbsp;|&nbsp; 
-                    <strong>จ่ายแบบ:</strong> {{ $slip->payment_type ?? '-' }}
+                    <strong>ประเภท:</strong> {{ $slip->payment_type ?? '-' }}
                 </td>
             </tr>
         </table>
