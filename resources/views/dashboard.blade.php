@@ -19,6 +19,13 @@
         70% { transform: scale(1.05); box-shadow: 0 0 0 6px rgba(220, 53, 69, 0); }
         100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
     }
+    
+    .summary-box {
+        transition: transform 0.2s;
+    }
+    .summary-box:hover {
+        transform: translateY(-2px);
+    }
 </style>
 </head>
 <body class="bg-light">
@@ -31,13 +38,13 @@
             </span>
             <div class="d-flex text-white align-items-center gap-2">
                 <i class="bi bi-person"></i>
-                <span class="me-2">สวัสดี, {{ Auth::user()->name }}</span>
+                <span class="me-2 d-none d-md-inline">สวัสดี, {{ Auth::user()->name }}</span>
                 
                 <button type="button" class="btn btn-sm btn-warning fw-bold" data-bs-toggle="modal" data-bs-target="#changePasswordModal">
-                    <i class="bi bi-key"></i> เปลี่ยนรหัส
+                    <i class="bi bi-key"></i> <span class="d-none d-sm-inline">เปลี่ยนรหัส</span>
                 </button>
 
-                <a href="/logout" class="btn btn-sm btn-danger fw-bold">ออกจากระบบ</a>
+                <a href="/logout" class="btn btn-sm btn-danger fw-bold">ออก</a>
             </div>
         </div>
     </nav>
@@ -59,8 +66,10 @@
                             </select>
                         </form>
 
-                        <h2 class="fw-bold my-3">{{ number_format($total_recent, 2) }} ฿</h2>
-                        <small>รวมจาก {{ $range }} รายการล่าสุดของคุณ</small>
+                        <h2 class="fw-bold my-3 text-center">{{ number_format($total_recent, 2) }} ฿</h2>
+                        <div class="text-center">
+                            <small>รวมจาก {{ $range }} รายการล่าสุดของคุณ</small>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -68,7 +77,7 @@
             <div class="col-md-7">
                 <div class="card border-primary shadow-sm h-100">
                     <div class="card-body">
-                        <form action="/dashboard" method="GET" id="yearForm" class="d-flex justify-content-between align-items-center mb-2">
+                        <form action="/dashboard" method="GET" id="yearForm" class="d-flex justify-content-between align-items-center mb-3">
                             <input type="hidden" name="range" value="{{ $range ?? 3 }}">
 
                             <h6 class="text-black mb-0 fw-bold"><i class="bi bi-calendar-check"></i> สรุปรายได้ปี {{ $selected_year + 543 }}</h6>
@@ -82,16 +91,36 @@
                             </select>
                         </form>
 
-                        <div class="row text-center mt-3">
-                            <div class="col-6 border-end">
-                                <small class="text-muted">รายได้รวม (Income)</small>
-                                <h4 class="fw-bold text-primary">{{ number_format($total_year_income, 2) }}</h4>
-                            </div>
+                        <div class="row g-2">
                             <div class="col-6">
-                                <small class="text-muted">รับสุทธิ (Net)</small>
-                                <h4 class="fw-bold text-success">{{ number_format($total_year_net, 2) }}</h4>
+                                <div class="p-2 border rounded bg-light summary-box h-100">
+                                    <small class="text-muted d-block">💰 เงินได้สะสม</small>
+                                    <span class="fw-bold text-primary fs-5">{{ number_format($total_year_income, 2) }}</span>
+                                </div>
+                            </div>
+
+                            <div class="col-6">
+                                <div class="p-2 border rounded bg-light summary-box h-100">
+                                    <small class="text-muted d-block">💸 เงินหักสะสม</small>
+                                    <span class="fw-bold text-danger fs-5">{{ number_format($total_year_deduct, 2) }}</span>
+                                </div>
+                            </div>
+
+                            <div class="col-6">
+                                <div class="p-2 border rounded bg-light summary-box h-100">
+                                    <small class="text-muted d-block">🏦 ภาษีสะสม</small>
+                                    <span class="fw-bold text-dark fs-5">{{ number_format($total_year_tax, 2) }}</span>
+                                </div>
+                            </div>
+
+                            <div class="col-6">
+                                <div class="p-2 border rounded bg-light summary-box h-100">
+                                    <small class="text-muted d-block">🏥 ประกันสังคมสะสม</small>
+                                    <span class="fw-bold text-info fs-5">{{ number_format($total_year_sso, 2) }}</span>
+                                </div>
                             </div>
                         </div>
+
                     </div>
                 </div>
             </div>
@@ -218,29 +247,23 @@
 
     <script>
         let idleTime = 0;
-        
-        // ตั้งเวลาตัดระบบ (หน่วย: นาที) *ต้องตั้งให้เท่ากับหรือน้อยกว่าใน .env นิดหน่อย
         const timeoutMinutes = 15; 
         const timeoutMilliseconds = timeoutMinutes * 60 * 1000;
 
-        function resetTimer() {
-            idleTime = 0;
-        }
+        function resetTimer() { idleTime = 0; }
 
-        // ถ้ามีการขยับเมาส์ หรือ กดแป้นพิมพ์ ให้เริ่มนับศูนย์ใหม่
         document.onload = resetTimer;
         document.onmousemove = resetTimer;
-        document.onmousedown = resetTimer; // กดคลิก
-        document.ontouchstart = resetTimer; // ทัชสกรีน
-        document.onclick = resetTimer;     // คลิก
-        document.onkeypress = resetTimer;   // พิมพ์
+        document.onmousedown = resetTimer;
+        document.ontouchstart = resetTimer;
+        document.onclick = resetTimer;
+        document.onkeypress = resetTimer;
 
-        // ตรวจสอบทุกๆ 1 นาที
         setInterval(function() {
-            idleTime += 60000; // บวกไปทีละ 1 นาที
+            idleTime += 60000;
             if (idleTime >= timeoutMilliseconds) {
                 alert('⏳ หมดเวลาการเชื่อมต่อ! ระบบจะออกจากระบบอัตโนมัติเพื่อความปลอดภัย');
-                window.location.href = '/logout'; // ดีดไปหน้า Logout
+                window.location.href = '/logout';
             }
         }, 60000); 
     </script>

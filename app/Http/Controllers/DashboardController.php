@@ -10,48 +10,55 @@ class DashboardController extends Controller
 {
     public function index(Request $request)
     {
-        $user = Auth::user();
-
-        // 1. ดึงรายการปีที่มีในระบบ (เพื่อเอาไปทำ Dropdown เลือกปี)
-        $years_list = SalarySlip::where('emp_id', $user->emp_id)
-                                ->select('year')
-                                ->distinct()
-                                ->orderBy('year', 'desc')
-                                ->pluck('year');
-
-        // 2. กำหนดปีที่เลือก (ถ้าไม่เลือก ให้เอาปีล่าสุดที่มี หรือปีปัจจุบัน)
-        $selected_year = $request->year ?? ($years_list->first() ?? date('Y'));
-
-        // 3. ดึงสลิปเงินเดือน "เฉพาะปีที่เลือก" (เอาไปโชว์ในตารางข้างล่าง)
-        $slips = SalarySlip::where('emp_id', $user->emp_id)
-                           ->where('year', $selected_year)
-                           ->orderBy('pay_date', 'desc')
-                           ->get();
-
-        // 4. คำนวณยอด 3 หรือ 6 เดือนล่าสุด (สำหรับกล่องสีส้มข้างบน)
-        // อันนี้จะไม่เกี่ยวกับปีที่เลือกข้างบนครับ ต้องเอาล่าสุดจริงๆ เสมอ
-        $range = $request->range ?? 3; // ค่าเริ่มต้นคือ 3 เดือน
-        $recent_slips = SalarySlip::where('emp_id', $user->emp_id)
-                                  ->orderBy('pay_date', 'desc')
-                                  ->take($range)
-                                  ->get();
+        $user = auth()->user();
         
-        $total_recent = $recent_slips->sum('net_salary'); // ยอดรวมล่าสุด
+        // 1. รับค่า Filter ต่างๆ
+        $range = $request->input('range', 3);
+        $selected_year = $request->input('year', date('Y')); // ปี ค.ศ. (เช่น 2026)
 
-        // 5. คำนวณยอดรวมรายปี (สำหรับปีที่เลือก)
-        // ใช้ตัวแปร $slips ที่ดึงมาแล้วได้เลย ไม่ต้อง Query ใหม่
-        $total_year_income = $slips->sum('total_income');
-        $total_year_net = $slips->sum('net_salary');
+        // 2. ดึงสลิปทั้งหมดของพนักงานคนนี้ ในปีที่เลือก (เพื่อเอามาคำนวณยอดรวม)
+        $yearSlips = \App\Models\SalarySlip::where('emp_id', $user->emp_id) // หรือ $user->username แล้วแต่ระบบเพื่อน
+                            ->where('year', $selected_year)
+                            ->get();
 
-        // 6. ส่งข้อมูลไปหน้าเว็บ
-        // สังเกตว่าผมเอา 'total_last_3' ออกแล้ว และใส่ตัวแปรที่ครบถ้วนแทน
+        // ✅✅ คำนวณยอดสะสมรายปี (เพิ่มใหม่ตรงนี้!)
+        $total_year_income = $yearSlips->sum('total_income');
+        $total_year_deduct = $yearSlips->sum('total_deduct'); // เงินหักสะสม
+        $total_year_tax    = $yearSlips->sum('tax');          // ภาษีสะสม
+        $total_year_sso    = $yearSlips->sum('sso');          // ประกันสังคมสะสม
+        $total_year_net    = $yearSlips->sum('net_salary');   // รับสุทธิสะสม
+
+        // 3. ดึงรายการสลิปที่จะโชว์ในตารางข้างล่าง (เรียงจากใหม่ไปเก่า)
+        $slips = \App\Models\SalarySlip::where('emp_id', $user->emp_id)
+                            ->where('year', $selected_year)
+                            ->orderBy('year', 'desc')
+                            ->orderBy('month', 'desc')
+                            ->get();
+
+        // 4. คำนวณยอดล่าสุด (กล่องซ้ายบน) ตาม Range ที่เลือก
+        $recentSlips = \App\Models\SalarySlip::where('emp_id', $user->emp_id)
+                            ->orderBy('pay_date', 'desc')
+                            ->take($range)
+                            ->get();
+        $total_recent = $recentSlips->sum('net_salary');
+
+        // 5. ลิสต์ปีที่มีข้อมูล (สำหรับ Dropdown)
+        $years_list = \App\Models\SalarySlip::where('emp_id', $user->emp_id)
+                            ->distinct()
+                            ->orderBy('year', 'desc')
+                            ->pluck('year');
+
+        // ส่งค่าไปหน้าเว็บ
         return view('dashboard', compact(
             'slips', 
-            'years_list', 
-            'selected_year', 
-            'range', 
             'total_recent', 
-            'total_year_income', 
+            'range', 
+            'selected_year', 
+            'years_list',
+            'total_year_income',
+            'total_year_deduct', // ✅ ส่งไป
+            'total_year_tax',    // ✅ ส่งไป
+            'total_year_sso',    // ✅ ส่งไป
             'total_year_net'
         ));
     }

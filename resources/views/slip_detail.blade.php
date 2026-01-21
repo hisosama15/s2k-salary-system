@@ -103,13 +103,31 @@
 </head>
 <body>
 
-    {{-- PHP Logic: จัดเรียงข้อมูล (ซ่อน 0, ดันขึ้น, และหดสั้น) --}}
     @php
-        // 1. สร้างลิสต์รายได้ (Income) - อันไหนเป็น 0 จะไม่ถูกใส่ใน Array นี้
+        // ฟังก์ชันช่วยตัดทศนิยม .00 ออก ถ้าเป็นเลขจำนวนเต็ม (เช่น 2.00 => 2, 2.50 => 2.5)
+        $cleanNum = function($val) {
+            return (float)$val + 0;
+        };
+
+        // 1. สร้างลิสต์รายได้ (Income)
         $incomes = [];
-        $incomes[] = ['name' => "วันทำงานปกติ ({$slip->work_days} วัน)", 'amount' => number_format($slip->salary, 2)];
         
-        if($slip->wage_rate > 0) $incomes[] = ['name' => "อัตราเงินเดือน/ค่าแรง", 'amount' => number_format($slip->wage_rate, 2)];
+        // --- ปรับรูปแบบใหม่ตามสั่ง ---
+        // บรรทัด 1: วันทำงานปกติ -> โชว์จำนวนวันในช่อง Amount
+        $incomes[] = [
+            'name' => "วันทำงานปกติ", 
+            'amount' => number_format($slip->work_days, 2) // เช่น 12.00
+        ];
+        
+        // บรรทัด 2: อัตราค่าแรง (เอาเรทมาใส่ในชื่อ) -> โชว์เงินเดือนรวมในช่อง Amount
+        if($slip->wage_rate > 0) {
+            $incomes[] = [
+                'name' => "อัตราค่าแรง " . number_format($slip->wage_rate, 2) . " บาท", 
+                'amount' => number_format($slip->salary, 2) // ยอดเงินเดือน
+            ];
+        }
+
+        // รายการอื่นๆ
         if($slip->ot_1_5 > 0)    $incomes[] = ['name' => "OT x 1.5 ({$slip->ot_1_5_hrs} ชม.)", 'amount' => number_format($slip->ot_1_5, 2)];
         if($slip->ot_1_0 > 0)    $incomes[] = ['name' => "OT x 1.0 ({$slip->ot_1_0_hrs} ชม.)", 'amount' => number_format($slip->ot_1_0, 2)];
         if($slip->ot_2_0 > 0)    $incomes[] = ['name' => "OT x 2.0 ({$slip->ot_2_0_hrs} ชม.)", 'amount' => number_format($slip->ot_2_0, 2)];
@@ -135,23 +153,22 @@
         if($slip->absent_deduct > 0)          $deductions[] = ['name' => "หักขาดงาน", 'amount' => number_format($slip->absent_deduct, 2)];
         if($slip->other_deduct > 0)           $deductions[] = ['name' => "หักอื่นๆ", 'amount' => number_format($slip->other_deduct, 2)];
 
-        // 3. เอาสถิติ (Stats) มาต่อท้ายรายการหัก
-        if($slip->sick_leave > 0)         $deductions[] = ['name' => "ป่วย ({$slip->sick_leave} วัน)", 'amount' => '-', 'is_stat' => true];
-        if($slip->sick_leave_no_cert > 0) $deductions[] = ['name' => "ป่วยไม่มีใบ ({$slip->sick_leave_no_cert} วัน)", 'amount' => '-', 'is_stat' => true];
-        if($slip->personal_leave > 0)     $deductions[] = ['name' => "ลากิจ ({$slip->personal_leave} ชม.)", 'amount' => '-', 'is_stat' => true];
-        if($slip->annual_leave > 0)       $deductions[] = ['name' => "พักร้อน ({$slip->annual_leave} ชม.)", 'amount' => '-', 'is_stat' => true];
-        if($slip->absent > 0)             $deductions[] = ['name' => "ขาดงาน ({$slip->absent} ชม.)", 'amount' => '-', 'is_stat' => true];
-        if($slip->other_leave > 0)        $deductions[] = ['name' => "ลาอื่นๆ ({$slip->other_leave} ชม.)", 'amount' => '-', 'is_stat' => true];
-        if($slip->late > 0)               $deductions[] = ['name' => "สาย ({$slip->late} นาที)", 'amount' => '-', 'is_stat' => true];
+        // 3. เอาสถิติ (Stats) - ใช้ฟังก์ชัน $cleanNum ตัดทศนิยม
+        if($slip->sick_leave > 0)         $deductions[] = ['name' => "ป่วย ({$cleanNum($slip->sick_leave)} วัน)", 'amount' => '-', 'is_stat' => true];
+        if($slip->sick_leave_no_cert > 0) $deductions[] = ['name' => "ป่วยไม่มีใบ ({$cleanNum($slip->sick_leave_no_cert)} วัน)", 'amount' => '-', 'is_stat' => true];
+        if($slip->personal_leave > 0)     $deductions[] = ['name' => "ลากิจ ({$cleanNum($slip->personal_leave)} ชม.)", 'amount' => '-', 'is_stat' => true];
+        if($slip->annual_leave > 0)       $deductions[] = ['name' => "พักร้อน ({$cleanNum($slip->annual_leave)} ชม.)", 'amount' => '-', 'is_stat' => true];
+        if($slip->absent > 0)             $deductions[] = ['name' => "ขาดงาน ({$cleanNum($slip->absent)} ชม.)", 'amount' => '-', 'is_stat' => true];
+        if($slip->other_leave > 0)        $deductions[] = ['name' => "ลาอื่นๆ ({$cleanNum($slip->other_leave)} ชม.)", 'amount' => '-', 'is_stat' => true];
+        if($slip->late > 0)               $deductions[] = ['name' => "สาย ({$cleanNum($slip->late)} นาที)", 'amount' => '-', 'is_stat' => true];
         
         // หมายเหตุ
         if(!empty($slip->remark)) {
             $deductions[] = ['name' => "หมายเหตุ: {$slip->remark}", 'amount' => '', 'is_stat' => true];
         }
 
-        // ✅ คำนวณจำนวนบรรทัดสูงสุดตามจริง (ไม่มีการล็อคขั้นต่ำ 10 แล้ว)
+        // คำนวณจำนวนบรรทัดสูงสุด
         $maxRows = max(count($incomes), count($deductions));
-        // เผื่อไว้นิดนึง ถ้าไม่มีข้อมูลเลย ให้โชว์อย่างน้อย 1 บรรทัด (กันตารางพัง)
         if ($maxRows < 1) $maxRows = 1; 
     @endphp
 
