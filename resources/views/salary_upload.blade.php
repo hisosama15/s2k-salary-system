@@ -59,7 +59,7 @@
                             </div>
 
                             <div class="col-md-5">
-                                <label class="fw-bold text-danger">2. รอบการทำงาน (ตัดวิก)</label>
+                                <label class="fw-bold text-danger">2. งวดที่จ่าย (ตัดวิก)</label>
                                 <div class="input-group">
                                     <span class="input-group-text">จาก</span>
                                     <input type="date" name="start_date" class="form-control" required>
@@ -70,7 +70,7 @@
                             </div>
 
                             <div class="col-md-3">
-                                <label class="fw-bold text-success">3. วันที่เงินออก</label>
+                                <label class="fw-bold text-success">3. วันที่จ่าย</label>
                                 <input type="date" name="pay_date" class="form-control border-success" value="{{ date('Y-m-d') }}" required>
                             </div>
                         </div>
