@@ -20,7 +20,7 @@
             
             <div class="d-flex align-items-center gap-2">
                 {{-- 1. ดึงชื่อจริงมาโชว์ (เช่น สวัสดี, นายธนบดี) --}}
-                <span class="text-white d-none d-md-block me-2">สวัสดี, {{ Auth::user()->name }}</span>
+                <span class="text-white d-none d-md-block me-2">สวัสดี, คุณ {{ Auth::user()->name }}</span>
                 
                 {{-- 2. ปุ่มแก้ไขข้อมูลส่วนตัว (กดตรงนี้เพื่อไปเปลี่ยนชื่อ) --}}
                 <a href="{{ route('profile.edit') }}" class="btn btn-sm btn-light text-dark fw-bold shadow-sm" title="แก้ไขข้อมูลส่วนตัว">

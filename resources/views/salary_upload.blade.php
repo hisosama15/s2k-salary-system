@@ -66,13 +66,15 @@
                                     <span class="input-group-text">ถึง</span>
                                     <input type="date" name="end_date" class="form-control" required>
                                 </div>
-                                <small class="text-muted">เช่น 26/11/2568 - 25/12/2568</small>
+                                <small class="text-muted">เช่น 26/11/2568 - 25/12/2568 (เเสดงในสลิป)</small>
                             </div>
 
                             <div class="col-md-3">
                                 <label class="fw-bold text-success">3. วันที่จ่าย</label>
                                 <input type="date" name="pay_date" class="form-control border-success" value="{{ date('Y-m-d') }}" required>
+                            <small class="text-muted">(เเสดงในสลิป)</small>
                             </div>
+                            
                         </div>
 
                         <div class="mb-3">
@@ -81,6 +83,7 @@
                                 <option value="รายวัน">พนักงานรายวัน (Daily)</option>
                                 <option value="รายเดือน">พนักงานรายเดือน (Monthly)</option>
                             </select>
+                            <small class="text-muted">(เเสดงในสลิป)</small>
                         </div>
 
                         <div class="mb-3">

@@ -32,9 +32,9 @@
 
     <nav class="navbar navbar-dark shadow-sm mb-4" style="background-color: #ff8e16ff;" >
         <div class="container">
-            <span class="navbar-brand fw-bold">
-                <img src="{{ asset('images/LOGO_S2K.png') }}" width="80" height="auto" alt="Company Logo">
-                <i class="bi bi-wallet2"></i> Salary
+            <span class="navbar-brand fw-bold ">
+                <img src="{{ asset('images/LOGO_S2K.png') }}" width="70" height="auto" alt="Company Logo">
+                <i class="bi bi-cash-coin"></i> Salary
             </span>
             <div class="d-flex text-white align-items-center gap-2">
                 <i class="bi bi-person"></i>
@@ -66,8 +66,8 @@
                             </select>
                         </form>
 
-                        <h2 class="fw-bold my-3 text-center">{{ number_format($total_recent, 2) }} ฿</h2>
-                        <div class="text-center">
+                        <h1 class="fw-bold my-5 text-center ">{{ number_format($total_recent, 2) }} ฿</h1>
+                        <div class="text-center opacity-75">
                             <small>รวมจาก {{ $range }} รายการล่าสุดของคุณ</small>
                         </div>
                     </div>
@@ -75,12 +75,12 @@
             </div>
 
             <div class="col-md-7">
-                <div class="card border-primary shadow-sm h-100">
+                <div class="card border-primary shadow-sm h-100" style="background-color: #ff8e16ff;">
                     <div class="card-body">
-                        <form action="/dashboard" method="GET" id="yearForm" class="d-flex justify-content-between align-items-center mb-3">
+                        <form action="/dashboard" method="GET" id="yearForm" class="d-flex justify-content-between align-items-center mb-3" >
                             <input type="hidden" name="range" value="{{ $range ?? 3 }}">
 
-                            <h6 class="text-black mb-0 fw-bold"><i class="bi bi-calendar-check"></i> สรุปรายได้ปี {{ $selected_year + 543 }}</h6>
+                            <h6 class="text-white mb-0 fw-bold opacity-75"><i class="bi bi-calendar-check"></i> สรุปรายได้ปี {{ $selected_year + 543 }}</h6>
                             
                             <select name="year" class="form-select form-select-sm w-auto border-primary" onchange="document.getElementById('yearForm').submit()">
                                 @foreach($years_list as $y)
@@ -94,29 +94,33 @@
                         <div class="row g-2">
                             <div class="col-6">
                                 <div class="p-2 border rounded bg-light summary-box h-100">
-                                    <small class="text-muted d-block">💰 เงินได้สะสม</small>
-                                    <span class="fw-bold text-primary fs-5">{{ number_format($total_year_income, 2) }}</span>
+                                    <small class="d-block text-success">💵 เงินได้สะสม</small>
+                                    <span class="fw-bold text-success fs-4">{{ number_format($total_year_income, 2) }} </span> 
+                                    <span class="fw-bold text-success fs-5">฿</span> 
                                 </div>
                             </div>
 
                             <div class="col-6">
                                 <div class="p-2 border rounded bg-light summary-box h-100">
-                                    <small class="text-muted d-block">💸 เงินหักสะสม</small>
-                                    <span class="fw-bold text-danger fs-5">{{ number_format($total_year_deduct, 2) }}</span>
+                                    <small class=" d-block text-danger">💸 เงินหักสะสม</small>
+                                    <span class="fw-bold text-danger fs-4">{{ number_format($total_year_deduct, 2) }}</span>
+                                    <span class="fw-bold text-danger fs-5">฿</span> 
                                 </div>
                             </div>
 
                             <div class="col-6">
                                 <div class="p-2 border rounded bg-light summary-box h-100">
-                                    <small class="text-muted d-block">🏦 ภาษีสะสม</small>
-                                    <span class="fw-bold text-dark fs-5">{{ number_format($total_year_tax, 2) }}</span>
+                                    <small class="text-dark d-block">🏦 ภาษีสะสม</small>
+                                    <span class="fw-bold text-dark fs-4">{{ number_format($total_year_tax, 2) }}</span>
+                                    <span class="fw-bold text-dark fs-5">฿</span> 
                                 </div>
                             </div>
 
                             <div class="col-6">
                                 <div class="p-2 border rounded bg-light summary-box h-100">
-                                    <small class="text-muted d-block">🏥 ประกันสังคมสะสม</small>
-                                    <span class="fw-bold text-info fs-5">{{ number_format($total_year_sso, 2) }}</span>
+                                    <small class="text-info d-block">🏥 ประกันสังคมสะสม</small>
+                                    <span class="fw-bold text-info fs-4">{{ number_format($total_year_sso, 2) }}</span>
+                                    <span class="fw-bold text-info fs-5">฿</span> 
                                 </div>
                             </div>
                         </div>
@@ -145,7 +149,7 @@
                                 <th>วันที่จ่าย</th>
                                 <th class="text-end text-success">รายรับรวม</th>
                                 <th class="text-end text-danger">รายการหัก</th>
-                                <th class="text-end fw-bold">รับสุทธิ</th>
+                                <th class="text-end text-primary">รับสุทธิ</th>
                                 <th class="text-center">สลิป</th>
                             </tr>
                         </thead>
@@ -162,7 +166,7 @@
 
                                     @if($loop->first)
                                         <span class="badge bg-danger text-white ms-2 badge-pulse">
-                                            ✨ ใหม่! 
+                                            ✨ ล่าสุด  
                                         </span>
                                     @endif
                                 </td>
@@ -174,7 +178,7 @@
                                 
                                 <td class="text-center">
                                     <a href="/slip/{{ $slip->id }}" class="btn {{ $loop->first ? 'btn-primary' : 'btn-outline-primary' }} btn-sm">
-                                        <i class="bi bi-file-earmark-text"></i> ดูรายละเอียด
+                                        <i class="bi bi-search"></i> ดูรายละเอียด
                                     </a>
                                 </td>
                             </tr>
@@ -214,7 +218,7 @@
                         @endif
 
                         <div class="mb-3">
-                            <label class="form-label">รหัสผ่านปัจจุบัน</label>
+                            <label class="form-label">รหัสผ่านปัจจุบัน (หากจำไม่ได้ติดต่อฝ่ายบุคคล)</label>
                             <input type="password" name="current_password" class="form-control" required>
                         </div>
                         <hr>
