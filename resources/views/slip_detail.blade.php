@@ -214,7 +214,7 @@
                 <td>
                     {{ $slip->department ?? '-' }} 
                     &nbsp;|&nbsp; 
-                    <strong>ประเภท:</strong> {{ $slip->payment_type ?? '-' }}
+                    <strong>ประเภท:</strong> {{ $slip->salary_type ?? '-' }}
                 </td>
             </tr>
         </table>
