@@ -48,6 +48,7 @@ class SalaryController extends Controller
             $year_ad = $request->year_th - 543;
             $request->merge(['year_ad' => $year_ad]);
             
+            // ส่ง $request ไปให้ SalaryImport ด้วย
             Excel::import(new SalaryImport($request), $request->file('file'));
 
             ActivityLog::record('Import Salary', "อัปโหลดข้อมูลสำเร็จ งวดเดือน: {$request->month}/{$request->year_th} ({$request->payment_type})");

@@ -20,6 +20,7 @@ class SalarySlip extends Model
         'pay_date',
         'start_date',
         'end_date',
+        'salary_type',
         'payment_type',
         
         // รายได้
