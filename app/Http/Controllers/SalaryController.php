@@ -6,101 +6,86 @@ use Illuminate\Http\Request;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Imports\SalaryImport;
 use App\Models\SalarySlip;
+use App\Models\User;
+use App\Models\ActivityLog;
+use Illuminate\Support\Facades\Hash;
+use Carbon\Carbon;
 
 class SalaryController extends Controller
 {
-    // หน้า Dashboard หลักของ Admin
     public function adminDashboard()
     {
         return view('admin_dashboard');
     }
 
-    // 1. แก้ฟังก์ชัน index (เพิ่มการดึงประวัติงวด)
     public function index()
     {
-        // ดึงรายการล่าสุดมาโชว์ในตาราง (เหมือนเดิม)
+        // รายการล่าสุด 10 คน
         $slips = SalarySlip::orderBy('id', 'desc')->take(10)->get();
 
-        // [เพิ่มใหม่] ดึงงวดการจ่ายทั้งหมดที่มีในระบบ (เพื่อเอาไปทำ Dropdown ลบ)
-        // Group ตามวันที่จ่าย, นับจำนวนคน, เรียงจากวันที่ล่าสุดก่อน
-        $history_dates = SalarySlip::selectRaw('pay_date, count(*) as count')
-                                   ->groupBy('pay_date')
-                                   ->orderBy('pay_date', 'desc')
-                                   ->get();
+        // [แก้ไขใหม่] ดึงประวัติแยกตาม "วินาทีที่กดอัปโหลด" (Timeline)
+        // จัดกลุ่มตาม created_at เพื่อให้เห็นว่ารอบไหนอัปโหลดมาเท่าไหร่
+        $history_dates = SalarySlip::selectRaw('created_at, count(*) as count')
+                                    ->groupBy('created_at')
+                                    ->orderBy('created_at', 'desc')
+                                    ->get();
 
         return view('salary_upload', compact('slips', 'history_dates'));
     }
 
-    // ตอนกดปุ่มอัปโหลด
     public function import(Request $request)
     {
         $request->validate([
-            'file' => 'required|mimes:xlsx,csv',
+            'file' => 'required|mimes:xlsx,csv,txt',
             'month' => 'required',
             'year_th' => 'required',
             'pay_date' => 'required',
             'start_date' => 'required',
             'end_date' => 'required',
-            'payment_type' => 'required', // รับค่าเพิ่ม
+            'payment_type' => 'required', 
         ]);
 
         try {
             $year_ad = $request->year_th - 543;
-            
-            // ส่งค่าไปให้ตัว Import
             $request->merge(['year_ad' => $year_ad]);
             
-            Excel::import(new SalaryImport, $request->file('file'));
+            Excel::import(new SalaryImport($request), $request->file('file'));
 
-            \App\Models\ActivityLog::record('Import Salary', "งวดเดือน: {$request->month}/{$request->year_th} (ประเภท: {$request->payment_type})");
+            ActivityLog::record('Import Salary', "อัปโหลดข้อมูลสำเร็จ งวดเดือน: {$request->month}/{$request->year_th}");
             
-            return back()->with('success', '✅ นำเข้าข้อมูลสำเร็จเรียบร้อย!');
+            return back()->with('success', '✅ นำเข้าข้อมูลรอบนี้สำเร็จเรียบร้อย!');
         } catch (\Exception $e) {
             return back()->with('error', '❌ เกิดข้อผิดพลาด: ' . $e->getMessage());
         }
     }
 
-    // 2. แก้ฟังก์ชันลบ (เปลี่ยนจากลบเดือน -> ลบตามวันที่จ่าย)
+    // [แก้ไขใหม่] ฟังก์ชันลบตามรอบเวลา (Batch Delete)
     public function deleteMonth(Request $request)
     {
-        $pay_date = $request->pay_date;
+        $created_at = $request->delete_target; 
 
-        if (!$pay_date) {
-            return back()->with('error', "❌ กรุณาเลือกงวดที่ต้องการลบ");
+        if (!$created_at) {
+            return back()->with('error', "❌ กรุณาเลือกรอบเวลาที่ต้องการลบ");
         }
 
-        // ลบข้อมูลทั้งหมดที่ตรงกับ "วันที่จ่าย" ที่เลือก
-        $deleted = SalarySlip::where('pay_date', $pay_date)->delete();
+        // ลบทุกคนที่ถูกบันทึกเข้ามาในวินาทีเดียวกันเป๊ะๆ
+        $deleted = SalarySlip::where('created_at', $created_at)->delete();
 
         if ($deleted > 0) {
-
-            \App\Models\ActivityLog::record('Delete Data', "ลบข้อมูลงวดวันที่: $pay_date ($deleted รายการ)");
-            // แปลงวันที่เป็นไทยสวยๆ เพื่อแจ้งเตือน
-            $year_th = date('Y', strtotime($pay_date)) + 543;
-            $date_th = date('d/m', strtotime($pay_date)) . '/' . $year_th;
+            ActivityLog::record('Delete Batch', "ลบข้อมูลรอบอัปโหลดเวลา: $created_at (จำนวน $deleted รายการ)");
             
-            return back()->with('success', "✅ ลบข้อมูลงวดวันที่ $date_th เรียบร้อยแล้ว ($deleted รายการ)");
+            $date_th = Carbon::parse($created_at)->addYears(543)->format('d/m/Y H:i:s');
+            return back()->with('success', "✅ ลบข้อมูลรอบอัปโหลดวันที่ $date_th เรียบร้อยแล้ว ($deleted รายการ)");
         } else {
-            return back()->with('error', "❌ ไม่พบข้อมูลให้ลบ");
+            return back()->with('error', "❌ ไม่พบข้อมูลในรอบที่เลือก (อาจถูกลบไปแล้ว)");
         }
     }
 
-    // หน้าดูรายชื่อพนักงาน
-   //public function employees()
-    //{
-        // ดึง User ทั้งหมดที่เป็นพนักงาน (ไม่เอา Admin)
-    //    $employees = \App\Models\User::where('role', 'employee')->get();
-    //    return view('admin_employees', compact('employees'));
-    //}
-
-    // 1. ฟังก์ชันค้นหา (แก้ของเดิมนิดหน่อย)
     public function employees(Request $request)
     {
         $search = $request->search;
-        
-        $employees = \App\Models\User::where('role', 'employee')
+        $employees = User::where('role', 'employee')
             ->when($search, function($query, $search) {
-                // ค้นหาจาก ชื่อ หรือ รหัสพนักงาน
                 return $query->where('name', 'like', "%{$search}%")
                              ->orWhere('emp_id', 'like', "%{$search}%");
             })
@@ -109,19 +94,25 @@ class SalaryController extends Controller
         return view('admin_employees', compact('employees', 'search'));
     }
 
-    // เปลี่ยนรหัสผ่านพนักงาน (Admin กำหนดเอง)
+    public function deleteEmployee($id)
+    {
+        try {
+            $user = User::findOrFail($id);
+            $name = $user->name;
+            SalarySlip::where('emp_id', $user->emp_id)->delete();
+            $user->delete();
+            return back()->with('success', "✅ ลบพนักงาน $name เรียบร้อยแล้ว");
+        } catch (\Exception $e) {
+            return back()->with('error', "❌ ไม่สามารถลบได้: " . $e->getMessage());
+        }
+    }
+
     public function changePassword(Request $request, $id)
     {
-        $request->validate([
-            'new_password' => 'required|string|min:4', // บังคับว่าต้องพิมพ์และยาว 4 ตัวขึ้นไป
-        ]);
-
-        $user = \App\Models\User::findOrFail($id);
-        $user->password = \Illuminate\Support\Facades\Hash::make($request->new_password);
+        $request->validate(['new_password' => 'required|string|min:4']);
+        $user = User::findOrFail($id);
+        $user->password = Hash::make($request->new_password);
         $user->save();
-
-        \App\Models\ActivityLog::record('Change Password', "เปลี่ยนรหัสผ่านให้พนักงาน: {$user->name} ({$user->emp_id})");
-
-        return back()->with('success', "✅ เปลี่ยนรหัสผ่านของ $user->name เป็น '{$request->new_password}' เรียบร้อยแล้ว");
+        return back()->with('success', "✅ เปลี่ยนรหัสผ่านเรียบร้อยแล้ว");
     }
 }

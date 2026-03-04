@@ -11,6 +11,13 @@
 <body class="bg-light">
     <div class="container mt-4">
         
+        @if(session('success'))
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                {{ session('success') }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        @endif
+
         <div class="card shadow-sm mb-4">
             <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
                 <div class="d-flex align-items-center gap-2">
@@ -19,7 +26,7 @@
                 <a href="/admin/dashboard" class="btn btn-secondary btn-sm" style="background-color: #686766;">⬅ กลับเมนูหลัก</a>
             </div>
             
-            <div class="card-body bg-white border-bottom">
+            <div class="card-body bg-white border-bottom d-flex justify-content-between align-items-center flex-wrap gap-3">
                 <form action="/admin/logs" method="GET" class="d-flex align-items-center gap-2">
                     <label class="fw-bold"><i class="bi bi-funnel-fill"></i> เลือกปี:</label>
                     <select name="year" class="form-select w-auto border-dark" onchange="this.form.submit()">
@@ -34,6 +41,24 @@
                         <a href="/admin/logs" class="btn btn-outline-danger btn-sm">❌ ล้างค่า</a>
                     @endif
                 </form>
+
+                <div class="d-flex gap-2">
+                    <form action="{{ route('admin.logs.clear') }}" method="POST" onsubmit="return confirm('⚠️ ยืนยันที่จะลบ Log ที่เก่ากว่า 30 วัน?')">
+                        @csrf
+                        <input type="hidden" name="type" value="old">
+                        <button type="submit" class="btn btn-outline-warning btn-sm text-dark">
+                            <i class="bi bi-trash"></i> ลบที่เก่ากว่า 30 วัน
+                        </button>
+                    </form>
+
+                    <form action="{{ route('admin.logs.clear') }}" method="POST" onsubmit="return confirm('‼️ ยืนยันที่จะลบประวัติทั้งหมด? (ข้อมูลจะหายถาวร)')">
+                        @csrf
+                        <input type="hidden" name="type" value="all">
+                        <button type="submit" class="btn btn-danger btn-sm">
+                            <i class="bi bi-fire"></i> ล้าง Log ทั้งหมด
+                        </button>
+                    </form>
+                </div>
             </div>
 
             <div class="card-body">
@@ -70,7 +95,7 @@
                             @empty
                             <tr>
                                 <td colspan="4" class="text-center py-4 text-muted">
-                                    ไม่พบประวัติการใช้งานในปีนี้
+                                    ไม่พบประวัติการใช้งาน
                                 </td>
                             </tr>
                             @endforelse
@@ -84,5 +109,6 @@
             </div>
         </div>
     </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
