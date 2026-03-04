@@ -23,11 +23,10 @@ class SalaryController extends Controller
         // รายการล่าสุด 10 คน
         $slips = SalarySlip::orderBy('id', 'desc')->take(10)->get();
 
-        // [แก้ไขใหม่] ดึงประวัติแยกตาม "วินาทีที่กดอัปโหลด" (Timeline)
-        // จัดกลุ่มตาม created_at เพื่อให้เห็นว่ารอบไหนอัปโหลดมาเท่าไหร่
-        $history_dates = SalarySlip::selectRaw('created_at, count(*) as count')
-                                    ->groupBy('created_at')
-                                    ->orderBy('created_at', 'desc')
+        // [แก้ไขกลับ] ดึงประวัติแยกตามงวดวันที่ (Start - End Date) เพื่อมัดรวมคนในงวดเดียวกัน
+        $history_dates = SalarySlip::selectRaw('start_date, end_date, count(*) as count')
+                                    ->groupBy('start_date', 'end_date')
+                                    ->orderBy('start_date', 'desc')
                                     ->get();
 
         return view('salary_upload', compact('slips', 'history_dates'));
@@ -51,33 +50,41 @@ class SalaryController extends Controller
             
             Excel::import(new SalaryImport($request), $request->file('file'));
 
-            ActivityLog::record('Import Salary', "อัปโหลดข้อมูลสำเร็จ งวดเดือน: {$request->month}/{$request->year_th}");
+            ActivityLog::record('Import Salary', "อัปโหลดข้อมูลสำเร็จ งวดเดือน: {$request->month}/{$request->year_th} ({$request->payment_type})");
             
-            return back()->with('success', '✅ นำเข้าข้อมูลรอบนี้สำเร็จเรียบร้อย!');
+            return back()->with('success', '✅ นำเข้าข้อมูลสำเร็จเรียบร้อย!');
         } catch (\Exception $e) {
             return back()->with('error', '❌ เกิดข้อผิดพลาด: ' . $e->getMessage());
         }
     }
 
-    // [แก้ไขใหม่] ฟังก์ชันลบตามรอบเวลา (Batch Delete)
+    // [แก้ไขกลับ] ฟังก์ชันลบตามงวดวันที่ (Period Delete)
     public function deleteMonth(Request $request)
     {
-        $created_at = $request->delete_target; 
+        $target = $request->delete_target; // รับค่า "start_date|end_date"
 
-        if (!$created_at) {
-            return back()->with('error', "❌ กรุณาเลือกรอบเวลาที่ต้องการลบ");
+        if (!$target) {
+            return back()->with('error', "❌ กรุณาเลือกรอบงวดวันที่ที่ต้องการลบ");
         }
 
-        // ลบทุกคนที่ถูกบันทึกเข้ามาในวินาทีเดียวกันเป๊ะๆ
-        $deleted = SalarySlip::where('created_at', $created_at)->delete();
+        $dates = explode('|', $target);
+        $start = $dates[0];
+        $end = $dates[1];
+
+        // ลบทุกคนที่อยู่ในงวดวันที่นี้ (ทั้งรายวันและรายเดือนหายพร้อมกัน)
+        $deleted = SalarySlip::where('start_date', $start)
+                             ->where('end_date', $end)
+                             ->delete();
 
         if ($deleted > 0) {
-            ActivityLog::record('Delete Batch', "ลบข้อมูลรอบอัปโหลดเวลา: $created_at (จำนวน $deleted รายการ)");
+            ActivityLog::record('Delete Period', "ลบข้อมูลลวดวันที่: $start ถึง $end (จำนวน $deleted รายการ)");
             
-            $date_th = Carbon::parse($created_at)->addYears(543)->format('d/m/Y H:i:s');
-            return back()->with('success', "✅ ลบข้อมูลรอบอัปโหลดวันที่ $date_th เรียบร้อยแล้ว ($deleted รายการ)");
+            $start_th = Carbon::parse($start)->addYears(543)->format('d/m/Y');
+            $end_th = Carbon::parse($end)->addYears(543)->format('d/m/Y');
+            
+            return back()->with('success', "✅ ลบข้อมูลลวดวันที่ $start_th ถึง $end_th เรียบร้อยแล้ว ($deleted รายการ)");
         } else {
-            return back()->with('error', "❌ ไม่พบข้อมูลในรอบที่เลือก (อาจถูกลบไปแล้ว)");
+            return back()->with('error', "❌ ไม่พบข้อมูลในงวดที่เลือก");
         }
     }
 

@@ -37,9 +37,7 @@
                                     @endfor
                                 </select>
                                 <select name="year_th" class="form-select bg-white">
-                                    @php 
-                                        $cur_year_th = date('Y') + 543;
-                                    @endphp
+                                    @php $cur_year_th = date('Y') + 543; @endphp
                                     @for($y = $cur_year_th + 1; $y >= $cur_year_th - 5; $y--) 
                                         <option value="{{$y}}" {{ $y == $cur_year_th ? 'selected' : '' }}>{{$y}}</option> 
                                     @endfor
@@ -87,23 +85,22 @@
                 <hr class="my-5">
 
                 <div class="p-4 rounded-3 border border-warning bg-light shadow-sm">
-                    <h5 class="text-warning-emphasis fw-bold mb-3"><i class="bi bi-clock-history"></i> ลบตามรอบการอัปโหลด (Timeline)</h5>
-                    <p class="small text-muted mb-3">เลือกรอบเวลาที่อัปโหลดผิด เพื่อลบข้อมูลทั้งก้อนที่มาพร้อมกันในไฟล์นั้นๆ</p>
+                    <h5 class="text-warning-emphasis fw-bold mb-3"><i class="bi bi-clock-history"></i> ลบข้อมูลตามงวดวันที่ (Period Delete)</h5>
+                    <p class="small text-muted mb-3">เลือกรอบงวดวันที่จ่ายเงินเพื่อลบข้อมูลทั้งหมดในงวดนั้นๆ (ทั้งรายวันและรายเดือน)</p>
                     
-                    <form action="/salary/delete" method="POST" class="row g-3" onsubmit="return confirm('⚠️ ยืนยันที่จะลบข้อมูลทั้งรอบที่เลือก? (ข้อมูลจะหายถาวร)');">
+                    <form action="/salary/delete" method="POST" class="row g-3" onsubmit="return confirm('⚠️ ยืนยันที่จะลบข้อมูลทั้งงวดวันที่เลือก? (ข้อมูลจะหายถาวร)');">
                         @csrf
                         <div class="col-md-9">
                             <select name="delete_target" class="form-select border-danger fw-bold shadow-sm" required>
-                                <option value="">-- เลือกรอบเวลาที่อัปโหลดไว้ --</option>
+                                <option value="">-- เลือกรอบงวดวันที่ที่ต้องการลบ --</option>
                                 @foreach($history_dates as $index => $history)
                                     @php
-                                        // แปลงเป็น พ.ศ. และรูปแบบเวลาไทย
-                                        $dt = \Carbon\Carbon::parse($history->created_at);
-                                        $date_th = $dt->addYears(543)->format('d/m/Y H:i:s');
+                                        $start_th = \Carbon\Carbon::parse($history->start_date)->addYears(543)->format('d/m/Y');
+                                        $end_th = \Carbon\Carbon::parse($history->end_date)->addYears(543)->format('d/m/Y');
                                         $is_latest = ($index === 0) ? ' [✨ ล่าสุด]' : '';
                                     @endphp
-                                    <option value="{{ $history->created_at }}">
-                                        📅 รอบอัปโหลดเมื่อ: {{ $date_th }} (จำนวน {{ $history->count }} รายการ) {{ $is_latest }}
+                                    <option value="{{ $history->start_date }}|{{ $history->end_date }}">
+                                        📅 งวดที่จ่าย: {{ $start_th }} ถึง {{ $end_th }} (รวมทั้งหมด {{ $history->count }} รายการ) {{ $is_latest }}
                                     </option>
                                 @endforeach
                             </select>
@@ -111,7 +108,7 @@
 
                         <div class="col-md-3">
                             <button type="submit" class="btn btn-danger w-100 fw-bold shadow-sm">
-                                <i class="bi bi-trash3"></i> ลบข้อมูลรอบนี้
+                                <i class="bi bi-trash3"></i> ลบข้อมูลทั้งงวดนี้
                             </button>
                         </div>
                     </form>
